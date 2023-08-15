@@ -5,6 +5,8 @@ const driver = neo4j.driver(process.env.neo4juri,
     neo4j.auth.basic(process.env.neo4juser, process.env.neo4jpass))
 const db = driver.session()
 import * as bcrypt from 'bcrypt';
+const fs = require('fs')
+const { promisify } = require('util');
 const cloudinary = require('cloudinary').v2;
 cloudinary.config({
   secure: true
@@ -65,7 +67,12 @@ export async function createPost(req: Request, res: Response) {
                   };
               
                 const result = await cloudinary.uploader.upload(req.file.path, options);
-    
+                fs.unlink(req.file.path, (err) => {
+                    if (err) {
+                      console.error(err)
+                      return
+                    }
+                  })
                 const createPost = await db.run
                 ('MATCH (n:user) where n.email=$email CREATE (p:posts {postid:$id, posttext:$posttext, location:$location, image:$image}) <-[:posts {uploadDateTime: $date}]-(n), (p) -[:postedBy{uploadDateTime: $date}]-> (n) return p'
                 , {email: req.body.email, id:postid, posttext:req.body.posttext,location: req.body.location, image:String(result.secure_url), date: new Date().toISOString()});
