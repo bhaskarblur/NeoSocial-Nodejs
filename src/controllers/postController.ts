@@ -148,6 +148,10 @@ export async function getAllPosts(req: Request, res: Response) {
               , {postid:posts[i].postid});
               var totalComments = await db1.run('MATCH (p:posts)-[:comments]-> (c:comment) where p.postid=$postid return COUNT(c)'
               , {postid:posts[i].postid});
+
+              var isLiked = await db1.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
+              {postid: posts[i].postid, email:req.body.email})
+              posts[i]['isLiked'] = isLiked.records[0].get(0).low;
               posts[i]['commentsCount']= totalComments.records[0].get(0).low;
               posts[i]['likesCount']= totalLikes.records[0].get(0).low;
               db1.close();
@@ -191,6 +195,10 @@ export async function getUserAllPosts(req: Request, res: Response) {
               , {postid:posts[i].postid});
               var totalComments = await db1.run('MATCH (p:posts)-[:comments]-> (c:comment) where p.postid=$postid return COUNT(c)'
               , {postid:posts[i].postid});
+              
+              var isLiked = await db1.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
+              {postid: posts[i].postid, email:req.body.email})
+              posts[i]['isLiked'] = isLiked.records[0].get(0).low;
               posts[i]['commentsCount']= totalComments.records[0].get(0).low;
               posts[i]['likesCount']= totalLikes.records[0].get(0).low;
               db1.close();

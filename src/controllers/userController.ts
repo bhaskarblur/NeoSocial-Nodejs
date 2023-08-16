@@ -426,11 +426,29 @@ export async function userProfile(req: Request, res:Response) {
     if(await checkToken(req.body.token, req.body.email, res)) {
       const profile = await db.run("MATCH (n:user) where n.email=$uemail Return n.username as username ,n.email as email , n.profilepic as profilepic , n.bio as bio",
       {uemail: req.body.uemail})
+
+      
+      const posts= await db.run('MATCH (n:user) -[:posts]->(p:posts) where n.email=$uemail return p',
+      {uemail: req.body.uemail})
       const details={}
+      var followers = await db.run('MATCH (c:user)-[:followedBy]-> (ou:user) where c.email=$uemail return COUNT(ou)',
+      {uemail:req.body.uemail})
+
+      var followings = await db.run('MATCH (c:user)-[:follows]-> (ou:user) where c.email=$uemail return COUNT(ou)',
+      {uemail:req.body.uemail})
+ 
       details['username'] = profile.records[0]._fields[0];
       details['email'] = profile.records[0]._fields[1];
       details['profilepic'] = profile.records[0]._fields[2]
       details['bio'] = profile.records[0]._fields[3];
+      details['followersCount'] = followers.records[0].get(0).low;
+      details['followingsCount'] = followings.records[0].get(0).low;
+      var posts_=[]
+      posts.records.forEach(record => {
+        var post= record._fields[0].properties;
+        posts_.push(post);
+      })
+      details['posts'] = posts_;
       res.status(200).send({"message":"User details", "userDetails":details});
     }
   }
@@ -475,7 +493,7 @@ export async function deleteUser(req:Request, res:Response) {
   try{
     if(await checkToken(req.body.token, req.body.email, res)) {
     
-    await db.run('MATCH (n:user)-[:posts]->(p:posts), (n)-[:usesToken]->(t:token) where n.email=$email detach delete n,p,t;'
+    await db.run('MATCH (n:user)-[:posts]->(p:posts), (n)-[:usesToken]->(t:token), where n.email=$email detach delete n,p,t;'
        , {email: req.body.email, id:req.body.postid});
 
        res.status(200).send({"message":"User deleted! You've been logged out,"});
