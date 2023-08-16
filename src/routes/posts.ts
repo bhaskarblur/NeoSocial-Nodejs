@@ -9,7 +9,8 @@ const postsEndpoint ='/posts';
 
 const _storage = multer.diskStorage({
     destination:(req, file, cb)=>{
-      cb(null,__dirname+'/images')
+        var path_ = String(__dirname).replace('/routes','').toString();
+        cb(null,path_+'/images')
     },
     filename: (req,file,cb) => {
       console.log(file);
