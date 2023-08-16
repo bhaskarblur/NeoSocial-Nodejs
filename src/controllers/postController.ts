@@ -132,15 +132,26 @@ export async function getAllPosts(req: Request, res: Response) {
         const allPosts= await db.run('MATCH (p:posts)-[by:postedBy]->(u:user) return [u.email, u.username,p, u.profilepic] as pair ORDER BY by.uploadDateTime DESC');
 
         if(allPosts.records.length > 0) {
-            
 
             var posts = [];
-            allPosts.records.forEach(record => {
+            allPosts.records.forEach( async record => {
                 var post={}
                 post= record._fields[0][2].properties;
                 post['userDetails'] = {"postedBy":record._fields[0][0], "postedByUsername":record._fields[0][1],"profilepic": record._fields[0][3]};
                 posts.push(post);
+             
             });
+
+            for(var i = 0; i < posts.length; i++) {
+              const db1 = driver.session()
+              var totalLikes = await db1.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid return COUNT(c)'
+              , {postid:posts[i].postid});
+              var totalComments = await db1.run('MATCH (p:posts)-[:comments]-> (c:comment) where p.postid=$postid return COUNT(c)'
+              , {postid:posts[i].postid});
+              posts[i]['commentsCount']= totalComments.records[0].get(0).low;
+              posts[i]['likesCount']= totalLikes.records[0].get(0).low;
+              db1.close();
+            }
             
     
             res.status(200).send({"message":"Home all Posts","posts":posts});
@@ -174,6 +185,16 @@ export async function getUserAllPosts(req: Request, res: Response) {
                 posts.push(post);
             });
             
+            for(var i = 0; i < posts.length; i++) {
+              const db1 = driver.session()
+              var totalLikes = await db1.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid return COUNT(c)'
+              , {postid:posts[i].postid});
+              var totalComments = await db1.run('MATCH (p:posts)-[:comments]-> (c:comment) where p.postid=$postid return COUNT(c)'
+              , {postid:posts[i].postid});
+              posts[i]['commentsCount']= totalComments.records[0].get(0).low;
+              posts[i]['likesCount']= totalLikes.records[0].get(0).low;
+              db1.close();
+            }
     
             res.status(200).send({"message":"User all Posts","posts":posts});
         }
@@ -311,3 +332,31 @@ export async function likedPosts(req: Request, res: Response){
         res.status(403).send({"message":err.message});
 }
   }
+
+  export async function singlePost(req:Request, res: Response) {
+    try{
+      if(await checkToken(req.body.token, req.body.email, res)) {
+
+        const postsingle = await db.run('MATCH (p:posts)-[by:postedBy]->(u:user) where p.postid=$postid return [u.email, u.username,p, u.profilepic] as pair ORDER BY by.uploadDateTime DESC',
+        {postid: req.body.postid});
+
+        var post={}
+        var record= postsingle.records[0];
+        post= record._fields[0][2].properties;
+        post['userDetails'] = {"postedBy":record._fields[0][0], "postedByUsername":record._fields[0][1],"profilepic": record._fields[0][3]};
+      
+        var totalLikes = await db.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid return COUNT(c)'
+        , {postid: req.body.postid});
+        var totalComments = await db.run('MATCH (p:posts)-[:comments]-> (c:comment) where p.postid=$postid return COUNT(c)'
+        , {postid: req.body.postid});
+        post['commentsCount']= totalComments.records[0].get(0).low;
+        post['likesCount']= totalLikes.records[0].get(0).low;
+    
+
+        res.status(403).send({"message":'Post details', 'post':post});
+  }
+}
+catch(err){
+    res.status(403).send({"message":err.message});
+}
+}

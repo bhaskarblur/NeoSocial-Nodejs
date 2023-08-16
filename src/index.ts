@@ -138,3 +138,8 @@ router.post(postsEndpoint+"/post-likes", (req, res) => {
 router.post(postsEndpoint+"/post-comments", (req, res) => {
     postController.postcomments(req, res);
 })
+
+
+router.post(postsEndpoint+"/single-post", (req, res) => {
+    postController.singlePost(req, res);
+})
