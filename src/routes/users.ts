@@ -71,6 +71,14 @@ router.post(userEndpoint+"/set-bio", (req, res) => {
     userController.setBio(req, res);
 })
 
+router.post(userEndpoint+"/set-link", (req, res) => {
+    userController.setLink(req, res);
+})
+
+router.post(userEndpoint+"/set-phone", (req, res) => {
+    userController.setPhone(req, res);
+})
+
 router.post(userEndpoint+"/user-profile", (req, res) => {
     userController.userProfile(req, res);
 })

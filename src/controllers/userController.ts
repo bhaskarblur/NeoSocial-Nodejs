@@ -297,6 +297,33 @@ export async function setBio (req: Request, res:Response) {
   }
 }
 
+export async function setLink (req: Request, res:Response) {
+
+  try{
+    if(await checkToken(req.body.token, req.body.email, res)) {
+      await db.run('MATCH (n:user) where n.email=$email set n.link=$link return n', 
+      {email:req.body.email, link:req.body.link});
+      res.status(200).send({"message":"Link updated successfully!"});
+    }
+  }
+  catch(err){
+    res.status(403).send({"message":err.message});
+  }
+}
+
+export async function setPhone (req: Request, res:Response) {
+
+  try{
+    if(await checkToken(req.body.token, req.body.email, res)) {
+      await db.run('MATCH (n:user) where n.email=$email set n.phone=$phone return n', 
+      {email:req.body.email, phone:req.body.phone});
+      res.status(200).send({"message":"Phone number updated successfully!"});
+    }
+  }
+  catch(err){
+    res.status(403).send({"message":err.message});
+  }
+}
 
 export async function uploadProfilepic (req: Request, res:Response) {
   try{
@@ -337,6 +364,7 @@ export async function uploadProfilepic (req: Request, res:Response) {
   }
 
 }
+
 export async function followUser(req:Request, res: Response) {
   try{
     if(await checkToken(req.body.token, req.body.email, res)) {
@@ -424,7 +452,7 @@ export async function userProfile(req: Request, res:Response) {
   try{
 
     if(await checkToken(req.body.token, req.body.email, res)) {
-      const profile = await db.run("MATCH (n:user) where n.email=$uemail Return n.username as username ,n.email as email , n.profilepic as profilepic , n.bio as bio",
+      const profile = await db.run("MATCH (n:user) where n.email=$uemail Return n.username as username ,n.email as email , n.profilepic as profilepic , n.bio as bio, n.link as link, n.phone as phone",
       {uemail: req.body.uemail})
 
       
@@ -441,6 +469,10 @@ export async function userProfile(req: Request, res:Response) {
       details['email'] = profile.records[0]._fields[1];
       details['profilepic'] = profile.records[0]._fields[2]
       details['bio'] = profile.records[0]._fields[3];
+      details['link'] = profile.records[0]._fields[4];
+      if(req.body.email === req.body.uemail) {
+      details['phone'] = profile.records[0]._fields[5];
+      }
       details['followersCount'] = followers.records[0].get(0).low;
       details['followingsCount'] = followings.records[0].get(0).low;
       var posts_=[]
@@ -505,3 +537,4 @@ catch(err){
 }
 
 }
+
