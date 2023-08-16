@@ -470,3 +470,20 @@ catch(err){
 }
 
 }
+
+export async function deleteUser(req:Request, res:Response) {
+  try{
+    if(await checkToken(req.body.token, req.body.email, res)) {
+    
+    await db.run('MATCH (n:user)-[:posts]->(p:posts), (n)-[:usesToken]->(t:token) where n.email=$email detach delete n,p,t;'
+       , {email: req.body.email, id:req.body.postid});
+
+       res.status(200).send({"message":"User deleted! You've been logged out,"});
+     
+}
+}
+catch(err){
+  res.status(403).send({"message":err.message});
+}
+
+}

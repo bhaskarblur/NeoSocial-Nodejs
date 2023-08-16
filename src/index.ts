@@ -143,3 +143,11 @@ router.post(postsEndpoint+"/post-comments", (req, res) => {
 router.post(postsEndpoint+"/single-post", (req, res) => {
     postController.singlePost(req, res);
 })
+
+router.post(postsEndpoint+"/save-post", (req, res) => {
+    postController.savePost(req, res);
+})
+
+router.post(postsEndpoint+"/saved-posts", (req, res) => {
+    postController.savedPosts(req, res);
+})

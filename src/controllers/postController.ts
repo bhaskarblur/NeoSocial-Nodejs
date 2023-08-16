@@ -229,6 +229,27 @@ try{
     }
 }
 
+export async function savePost(req: Request, res: Response) {
+  try{
+      if(await checkToken(req.body.token, req.body.email, res)) {
+          if(req.body.action===String(0)) {
+          await db.run('MATCH (n:user),(p:posts) where n.email=$email AND p.postid=$postid CREATE (p) <-[:savedPosts{savedDateTime: $date}]-(n)'
+          , {email:req.body.email, postid:req.body.postid, date:new Date().toISOString()});
+          res.status(200).send({"message":"Post saved successfully."});
+          }
+          else {
+              await db.run('MATCH (n:user)-[rel_:savedPosts]-> (p:posts) where n.email=$email AND p.postid=$postid delete rel_'
+              , {email:req.body.email, postid:req.body.postid, date:new Date().toISOString()});
+              res.status(200).send({"message":"Post unsaved successfully."});
+          }
+  
+      }
+  }
+      catch(err){
+              res.status(403).send({"message":err.message});
+      }
+  }
+
 export async function commentOnPost(req:Request, res: Response) {
     try{
         if(await checkToken(req.body.token, req.body.email, res)) {
@@ -262,6 +283,36 @@ export async function likedPosts(req: Request, res: Response){
             
     
             res.status(200).send({"message":"User all Posts","posts":posts});
+        }
+        else {
+            res.status(404).send({"message":"No posts found!"});
+        }
+  
+      }
+  }
+      catch(err){
+              res.status(403).send({"message":err.message});
+      }
+  }
+
+  export async function savedPosts(req: Request, res: Response){
+    try{
+      if(await checkToken(req.body.token, req.body.email, res)) {
+  
+        const allPosts= await db.run('MATCH (p:posts) <-[:savedPosts]- (u:user), (p)-[:postedBy]->(ou:user) where u.email=$email return [ou.email, ou.username,p, ou.profilepic] as pair',
+        {email:req.body.email});
+  
+        if(allPosts.records.length > 0) {
+            var posts = [];
+            allPosts.records.forEach(record => {
+                var post={}
+                post= record._fields[0][2].properties;
+                post['userDetails'] = {"postedBy":record._fields[0][0], "postedByUsername":record._fields[0][1], "profilepic": record._fields[0][3]};
+                posts.push(post);
+            });
+            
+    
+            res.status(200).send({"message":"User saved Posts","posts":posts});
         }
         else {
             res.status(404).send({"message":"No posts found!"});
