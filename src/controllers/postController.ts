@@ -151,7 +151,10 @@ export async function getAllPosts(req: Request, res: Response) {
 
               var isLiked = await db1.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
               {postid: posts[i].postid, email:req.body.email})
+              var isSaved = await db1.run('MATCH (p:posts)< -[:savedPosts]- (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
+              {postid: posts[i].postid, email:req.body.email})
               posts[i]['isLiked'] = isLiked.records[0].get(0).low;
+              posts[i]['isSaved'] = isSaved.records[0].get(0).low;
               posts[i]['commentsCount']= totalComments.records[0].get(0).low;
               posts[i]['likesCount']= totalLikes.records[0].get(0).low;
               db1.close();
@@ -198,7 +201,10 @@ export async function getUserAllPosts(req: Request, res: Response) {
               
               var isLiked = await db1.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
               {postid: posts[i].postid, email:req.body.email})
+              var isSaved = await db1.run('MATCH (p:posts)< -[:savedPosts]- (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
+              {postid: posts[i].postid, email:req.body.email})
               posts[i]['isLiked'] = isLiked.records[0].get(0).low;
+              posts[i]['isSaved'] = isSaved.records[0].get(0).low;
               posts[i]['commentsCount']= totalComments.records[0].get(0).low;
               posts[i]['likesCount']= totalLikes.records[0].get(0).low;
               db1.close();
@@ -408,6 +414,12 @@ export async function likedPosts(req: Request, res: Response){
         , {postid: req.body.postid});
         var totalComments = await db.run('MATCH (p:posts)-[:comments]-> (c:comment) where p.postid=$postid return COUNT(c)'
         , {postid: req.body.postid});
+        var isLiked = await db.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
+        {postid: req.body.postid, email:req.body.email})
+        var isSaved = await db.run('MATCH (p:posts)< -[:savedPosts]- (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
+        {postid: req.body.postid, email:req.body.email})
+        post['isLiked'] = isLiked.records[0].get(0).low;
+        post['isSaved'] = isSaved.records[0].get(0).low;
         post['commentsCount']= totalComments.records[0].get(0).low;
         post['likesCount']= totalLikes.records[0].get(0).low;
     
