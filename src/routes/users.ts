@@ -15,10 +15,19 @@ const _storage = multer.diskStorage({
     filename: (req,file,cb) => {
       console.log(file);
       cb(null, Date.now() + path.extname(file.originalname))
+    },
+    fileFilters: (req,file, cb) => {
+        if(file.mimetype.split('/')[0] === 'image') {
+            cb(null,true);
+        }
+        else {
+            cb(new Error("File is not the right format type"),false);
+        }
     }
   })
-  
-  const upload = multer({ storage : _storage});
+
+  const upload = multer({ storage : _storage, 
+    limits : { fileSize: 2000000, files: 1}});
 export function getRouter() {
     return router;
 }
