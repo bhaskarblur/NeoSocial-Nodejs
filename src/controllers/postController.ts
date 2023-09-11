@@ -1,10 +1,10 @@
+import * as bcrypt from 'bcrypt'
 import { Request, Response } from "express"
 require('dotenv').config()
 const neo4j = require('neo4j-driver')
 const driver = neo4j.driver(process.env.neo4juri, 
     neo4j.auth.basic(process.env.neo4juser, process.env.neo4jpass))
 const db = driver.session()
-import * as bcrypt from 'bcrypt';
 const fs = require('fs')
 const { promisify } = require('util');
 const cloudinary = require('cloudinary').v2;
@@ -397,6 +397,22 @@ export async function likedPosts(req: Request, res: Response){
         res.status(403).send({"message":err.message});
 }
   }
+
+  export async function deleteComment(req:Request, res: Response) {
+    try{
+        if(await checkToken(req.body.token, req.body.email, res)) {
+           
+            await db.run
+            ('MATCH (c:comment) -[:commentedBy]-> (n:user) where n.email = $email AND c.comment = $comment DETACH DELETE c'
+            , {email:req.body.email, postid:req.body.postid, comment:req.body.comment, date:new Date().toISOString()});
+            res.status(200).send({"message":"Comment posted!"});
+    
+        }
+    }
+        catch(err){
+                res.status(403).send({"message":err.message});
+        }
+}
 
   export async function singlePost(req:Request, res: Response) {
     try{

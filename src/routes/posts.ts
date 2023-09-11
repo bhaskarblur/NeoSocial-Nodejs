@@ -1,9 +1,9 @@
-import express, { response } from 'express';
+import express from 'express';
+import * as postController from '../controllers/postController';
 
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-import * as postController from '../controllers/postController';
 
 const postsEndpoint ='/posts';
 
@@ -64,6 +64,11 @@ router.post(postsEndpoint+"/post-likes", (req, res) => {
 
 router.post(postsEndpoint+"/post-comments", (req, res) => {
     postController.postcomments(req, res);
+})
+
+
+router.post(postsEndpoint+"/delete-comment", (req, res) => {
+    postController.deleteComment(req, res);
 })
 
 router.post(postsEndpoint+"/single-post", (req, res) => {
