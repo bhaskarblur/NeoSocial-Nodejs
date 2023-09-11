@@ -403,7 +403,7 @@ export async function likedPosts(req: Request, res: Response){
         if(await checkToken(req.body.token, req.body.email, res)) {
            
             await db.run
-            ('MATCH (c:comment) -[:commentedBy]-> (n:user) where n.email = $email AND c.comment = $comment DETACH DELETE c'
+            ('MATCH (c:comment) -[:commentedBy]-> (n:user), (c) -[:commentedOn]-> (p:posts) where n.email = $email AND p.postid=$postid AND c.comment = $comment DETACH DELETE c'
             , {email:req.body.email, postid:req.body.postid, comment:req.body.comment, date:new Date().toISOString()});
             res.status(200).send({"message":"Comment posted!"});
     
