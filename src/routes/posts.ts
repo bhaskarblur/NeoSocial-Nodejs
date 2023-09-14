@@ -17,7 +17,8 @@ const _storage = multer.diskStorage({
       cb(null, Date.now() + path.extname(file.originalname))
     },
     fileFilters: (req,file, cb) => {
-        if(file.mimetype.split('/')[0] === 'image') {
+        var ext = path.extname(file.originalname);
+        if(file.mimetype.split('/')[0] === 'image' || ext !== '.png' || ext !== '.jpg' || ext !== '.jpeg' ) {
             cb(null,true);
         }
         else {
