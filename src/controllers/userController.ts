@@ -465,7 +465,8 @@ export async function userProfile(req: Request, res:Response) {
       var followings = await db.run('MATCH (c:user)-[:follows]-> (ou:user) where c.email=$uemail return COUNT(ou)',
       {uemail:req.body.uemail})
 
-      var isFollowed = await db.run('MATCH (n:user)-[:followedBy]->(m:user) where n.email=$uemail AND  m.email=$email return m;')
+      var isFollowed = await db.run('MATCH (n:user)-[:followedBy]->(m:user) where n.email=$uemail AND  m.email=$email return m;'
+      ,  {uemail: req.body.uemail,  email: req.body.email})
  
       details['username'] = profile.records[0]._fields[0];
       details['email'] = profile.records[0]._fields[1];
