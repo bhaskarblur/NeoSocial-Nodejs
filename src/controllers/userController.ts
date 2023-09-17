@@ -456,8 +456,40 @@ export async function userProfile(req: Request, res:Response) {
       {uemail: req.body.uemail})
 
       
-      const posts= await db.run('MATCH (n:user) -[:posts]->(p:posts) where n.email=$uemail return p',
-      {uemail: req.body.uemail})
+      var posts_ =[];
+      const allPosts= await db.run('MATCH (p:posts) <-[_p:posts]- (u:user) where u.email=$uemail return [u.email, u.username,p, u.profilepic] as pair ORDER BY _p.uploadDateTime DESC',
+      {uemail:req.body.uemail});
+
+      if(allPosts.records.length > 0) {
+          
+          var posts = [];
+          allPosts.records.forEach(record => {
+              var post={}
+              post= record._fields[0][2].properties;
+              post['userDetails'] = {"postedBy":record._fields[0][0], "postedByUsername":record._fields[0][1],"profilepic": record._fields[0][3]
+          ,"likes":  record._fields[0][4], "comments": record._fields[0][4]};
+              posts.push(post);
+          });
+          
+          for(var i = 0; i < posts.length; i++) {
+            const db1 = driver.session()
+            var totalLikes = await db1.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid return COUNT(c)'
+            , {postid:posts[i].postid});
+            var totalComments = await db1.run('MATCH (p:posts)-[:comments]-> (c:comment) where p.postid=$postid return COUNT(c)'
+            , {postid:posts[i].postid});
+            
+            var isLiked = await db1.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
+            {postid: posts[i].postid, email:req.body.email})
+            var isSaved = await db1.run('MATCH (p:posts)< -[:savedPosts]- (c:user) where p.postid=$postid AND c.email=$email return COUNT(c)',
+            {postid: posts[i].postid, email:req.body.email})
+            posts[i]['isLiked'] = isLiked.records[0].get(0).low;
+            posts[i]['isSaved'] = isSaved.records[0].get(0).low;
+            posts[i]['commentsCount']= totalComments.records[0].get(0).low;
+            posts[i]['likesCount']= totalLikes.records[0].get(0).low;
+            db1.close();
+            posts_ = posts;
+          }
+        }
       const details={}
       var followers = await db.run('MATCH (c:user)-[:followedBy]-> (ou:user) where c.email=$uemail return COUNT(ou)',
       {uemail:req.body.uemail})
@@ -478,11 +510,6 @@ export async function userProfile(req: Request, res:Response) {
       }
       details['followersCount'] = followers.records[0].get(0).low;
       details['followingsCount'] = followings.records[0].get(0).low;
-      var posts_=[]
-      posts.records.forEach(record => {
-        var post= record._fields[0].properties;
-        posts_.push(post);
-      })
       if(isFollowed.records.length > 0) {
         details['isFollowed'] = 1;
       }
