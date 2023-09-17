@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcrypt'
 import { Request, Response } from "express"
 require('dotenv').config()
 
@@ -5,7 +6,6 @@ const neo4j = require('neo4j-driver')
 const driver = neo4j.driver(process.env.neo4juri, 
     neo4j.auth.basic(process.env.neo4juser, process.env.neo4jpass))
 const db = driver.session()
-import * as bcrypt from 'bcrypt';
 const fs = require('fs')
 const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
@@ -464,6 +464,8 @@ export async function userProfile(req: Request, res:Response) {
 
       var followings = await db.run('MATCH (c:user)-[:follows]-> (ou:user) where c.email=$uemail return COUNT(ou)',
       {uemail:req.body.uemail})
+
+      var isFollowed = await db.run('MATCH (n:user)-[:followedBy]->(m:user) where n.email=$uemail AND  m.email=$email return m;')
  
       details['username'] = profile.records[0]._fields[0];
       details['email'] = profile.records[0]._fields[1];
@@ -480,6 +482,12 @@ export async function userProfile(req: Request, res:Response) {
         var post= record._fields[0].properties;
         posts_.push(post);
       })
+      if(isFollowed.records.length > 0) {
+        details['isFollowed'] = 1;
+      }
+      else {
+        details['isFollowed'] = 0;
+      }
       details['posts'] = posts_;
       res.status(200).send({"message":"User details", "userDetails":details});
     }
