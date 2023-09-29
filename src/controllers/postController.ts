@@ -447,3 +447,50 @@ catch(err){
     res.status(403).send({"message":err.message});
 }
 }
+
+
+// free to access without authentication.
+export async function getOpenAllPosts(req: Request, res: Response) {
+
+  try{
+
+      const allPosts= await db.run('MATCH (p:posts)-[by:postedBy]->(u:user) return [u.email, u.username,p, u.profilepic] as pair ORDER BY by.uploadDateTime DESC');
+
+      if(allPosts.records.length > 0) {
+
+          var posts = [];
+          allPosts.records.forEach( async record => {
+              var post={}
+              post= record._fields[0][2].properties;
+              post['userDetails'] = {"postedBy":record._fields[0][0], "postedByUsername":record._fields[0][1],"profilepic": record._fields[0][3]};
+              posts.push(post);
+           
+          });
+
+          for(var i = 0; i < posts.length; i++) {
+            const db1 = driver.session()
+            var totalLikes = await db1.run('MATCH (p:posts)-[:likedBy]-> (c:user) where p.postid=$postid return COUNT(c)'
+            , {postid:posts[i].postid});
+            var totalComments = await db1.run('MATCH (p:posts)-[:comments]-> (c:comment) where p.postid=$postid return COUNT(c)'
+            , {postid:posts[i].postid});
+
+            var isLiked = 0
+            var isSaved = 0
+            posts[i]['isLiked'] = isLiked
+            posts[i]['isSaved'] = isSaved;
+            posts[i]['commentsCount']= totalComments.records[0].get(0).low;
+            posts[i]['likesCount']= totalLikes.records[0].get(0).low;
+            db1.close();
+          }
+          
+  
+          res.status(200).send({"message":"Open all Posts","posts":posts});
+      }
+      else {
+          res.status(404).send({"message":"No posts found!"});
+      }
+  }
+  catch(err){
+      res.status(403).send({"message":err.message});
+}
+}
