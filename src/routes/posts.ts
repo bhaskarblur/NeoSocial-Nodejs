@@ -39,7 +39,7 @@ router.post(postsEndpoint+"/post-feed", (req, res) => {
 })
 
 router.post(postsEndpoint+"/open-post-feed", (req, res) => {
-    postController.getAllPosts(req, res);
+    postController.getOpenAllPosts(req, res);
 })
 
 router.post(postsEndpoint+"/create-post", upload.single('image'), (req, res) => {
